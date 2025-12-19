@@ -1,6 +1,8 @@
-# Render Blueprint Specification
-# Deploy both backend and frontend on Render Free Plan
-# Documentation: https://render.com/docs/blueprint-spec
+# ===========================================
+# Render Blueprint - Vector AI App
+# Free Tier Compatible
+# Docs: https://render.com/docs/blueprint-spec
+# ===========================================
 
 services:
   # ===========================================
@@ -9,31 +11,36 @@ services:
   - type: web
     name: vector-ai-backend
     runtime: node
-    region: oregon # Free tier available in Oregon
+    region: oregon                # ✅ Allowed for backend
     plan: free
     branch: main
-    rootDir: . # Backend is in the root directory
+    rootDir: .
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /health
+
     envVars:
+      # ---------------------------------------
+      # App Environment
+      # ---------------------------------------
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 3000
-      # ========================================
-      # DEFAULT: 100% FREE (No API keys needed)
-      # ========================================
-      # Embedding Provider: 'local' - No API key needed
+
+      # ---------------------------------------
+      # LLM Configuration (Groq)
+      # ---------------------------------------
+      - key: LLM_PROVIDER
+        value: groq
+      - key: GROQ_CHAT_MODEL
+        value: llama-3.1-8b-instant
+
+      # ---------------------------------------
+      # Vector Search Configuration
+      # ---------------------------------------
       - key: EMBEDDING_PROVIDER
         value: local
-      # LLM Provider: 'local' - No API key needed
-      # Change to 'groq' or 'gemini' for AI-powered answers
-      - key: LLM_PROVIDER
-        value: local
-      # ========================================
-      # Vector Search Configuration
-      # ========================================
       - key: CHUNK_SIZE
         value: 300
       - key: CHUNK_OVERLAP
@@ -44,23 +51,16 @@ services:
         value: 0.3
       - key: MAX_FILE_SIZE
         value: 5242880
-      # ========================================
-      # OPTIONAL: Enable AI-Powered Answers
-      # Set these in Render Dashboard > Environment
-      # ========================================
-      # For Groq (FREE): Get key at https://console.groq.com
-      # Then set LLM_PROVIDER=groq in dashboard
-      # - key: GROQ_API_KEY
-      #   sync: false
-      # - key: GROQ_CHAT_MODEL
-      #   value: llama-3.1-8b-instant
-      # For Gemini (FREE): Get key at https://makersuite.google.com/app/apikey
-      # Then set LLM_PROVIDER=gemini in dashboard
-      # - key: GEMINI_API_KEY
-      #   sync: false
-      # For OpenAI (Paid): https://platform.openai.com
-      # - key: OPENAI_API_KEY
-      #   sync: false
+
+      # ---------------------------------------
+      # ❗ IMPORTANT
+      # ---------------------------------------
+      # DO NOT add GROQ_API_KEY here
+      # Add it from Render Dashboard:
+      # Backend → Environment → Add Variable
+      #
+      # Key:   GROQ_API_KEY
+      # Value: your_real_key_here
 
   # ===========================================
   # Frontend Static Site (Angular)
@@ -68,12 +68,12 @@ services:
   - type: web
     name: vector-ai-frontend
     runtime: static
-    region: oregon
-    plan: free
+    plan: free                     # ✅ Static free tier
     branch: main
     rootDir: frontend
     buildCommand: npm install && npm run build:prod
     staticPublishPath: dist/vector-ai-frontend/browser
+
     headers:
       - path: /*
         name: Cache-Control
@@ -81,11 +81,12 @@ services:
       - path: /index.html
         name: Cache-Control
         value: no-cache
+
     routes:
       - type: rewrite
         source: /*
         destination: /index.html
+
     envVars:
       - key: NODE_VERSION
         value: 18
-
