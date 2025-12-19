@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 import pdf from 'pdf-parse';
 import { config } from '../config/config.js';
 
@@ -11,6 +12,33 @@ export async function extractTextFromPdf(filePath) {
   const dataBuffer = fs.readFileSync(filePath);
   const data = await pdf(dataBuffer);
   return data.text;
+}
+
+/**
+ * Extract text content from a TXT file
+ * @param {string} filePath - Path to the TXT file
+ * @returns {Promise<string>} - Text content
+ */
+export async function extractTextFromTxt(filePath) {
+  const text = fs.readFileSync(filePath, 'utf-8');
+  return text;
+}
+
+/**
+ * Extract text from a file based on its extension
+ * @param {string} filePath - Path to the file
+ * @returns {Promise<string>} - Extracted text content
+ */
+export async function extractText(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  
+  if (ext === '.pdf') {
+    return await extractTextFromPdf(filePath);
+  } else if (ext === '.txt') {
+    return await extractTextFromTxt(filePath);
+  } else {
+    throw new Error(`Unsupported file type: ${ext}`);
+  }
 }
 
 /**
@@ -86,6 +114,27 @@ export async function processPdf(filePath) {
     metadata: {
       totalCharacters: text.length,
       totalChunks: chunks.length,
+      processedAt: new Date().toISOString(),
+    },
+  };
+}
+
+/**
+ * Process any supported document file (PDF or TXT) and return chunks
+ * @param {string} filePath - Path to the file
+ * @returns {Promise<{text: string, chunks: string[]}>}
+ */
+export async function processDocument(filePath) {
+  const text = await extractText(filePath);
+  const chunks = splitTextIntoChunks(text);
+  
+  return {
+    text,
+    chunks,
+    metadata: {
+      totalCharacters: text.length,
+      totalChunks: chunks.length,
+      fileType: path.extname(filePath).toLowerCase(),
       processedAt: new Date().toISOString(),
     },
   };

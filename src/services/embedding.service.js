@@ -6,8 +6,9 @@ import { AppError } from '../middleware/errorHandler.js';
 // Local embedding pipeline (lazy loaded)
 let localEmbeddingPipeline = null;
 
-// OpenAI client (lazy initialized)
+// API clients (lazy initialized)
 let openaiClient = null;
+let groqClient = null;
 
 /**
  * Get OpenAI client instance
@@ -19,6 +20,19 @@ function getOpenAIClient() {
     });
   }
   return openaiClient;
+}
+
+/**
+ * Get Groq client instance (OpenAI-compatible API)
+ */
+function getGroqClient() {
+  if (!groqClient) {
+    groqClient = new OpenAI({
+      apiKey: config.groqApiKey,
+      baseURL: 'https://api.groq.com/openai/v1',
+    });
+  }
+  return groqClient;
 }
 
 /**
@@ -176,7 +190,8 @@ function getReadableErrorMessage(error) {
 }
 
 /**
- * Generate an answer using GPT (when using OpenAI) or extractive approach (local)
+ * Generate an answer using the configured LLM provider
+ * Supports: OpenAI, Groq (FREE), Gemini (FREE), or local extractive
  * @param {string} question - User's question
  * @param {string[]} relevantChunks - Relevant document chunks
  * @returns {Promise<string>} - Generated answer
@@ -186,58 +201,127 @@ export async function generateAnswer(question, relevantChunks) {
     return 'No relevant information found in the documents.';
   }
 
-  if (config.embeddingProvider === 'openai') {
-    // Use GPT for intelligent answer generation
-    return await generateGPTAnswer(question, relevantChunks);
-  } else {
-    // Simple extractive approach for local mode
-    return generateExtractiveAnswer(question, relevantChunks);
-  }
-}
+  const llmProvider = config.llmProvider;
 
-/**
- * Generate answer using GPT
- * @param {string} question - User's question
- * @param {string[]} relevantChunks - Relevant document chunks
- * @returns {Promise<string>} - GPT-generated answer
- */
-async function generateGPTAnswer(question, relevantChunks) {
   try {
-    const client = getOpenAIClient();
-    
-    const context = relevantChunks
-      .map((chunk, index) => `[Source ${index + 1}]\n${chunk}`)
-      .join('\n\n');
-
-    const response = await client.chat.completions.create({
-      model: config.openaiChatModel,
-      messages: [
-        {
-          role: 'system',
-          content: `You are a helpful assistant that answers questions based on the provided document context. 
-Answer the question using ONLY the information from the provided context. 
-If the context doesn't contain enough information to answer the question, say so.
-Be concise and accurate. Cite source numbers when referencing specific information.`,
-        },
-        {
-          role: 'user',
-          content: `Context from documents:\n\n${context}\n\nQuestion: ${question}`,
-        },
-      ],
-      temperature: 0.3,
-      max_tokens: 1000,
-    });
-
-    return response.choices[0].message.content;
+    switch (llmProvider) {
+      case 'openai':
+        return await generateOpenAIAnswer(question, relevantChunks);
+      case 'groq':
+        return await generateGroqAnswer(question, relevantChunks);
+      case 'gemini':
+        return await generateGeminiAnswer(question, relevantChunks);
+      default:
+        return generateExtractiveAnswer(question, relevantChunks);
+    }
   } catch (error) {
-    console.error('GPT answer generation failed:', error.message);
+    console.error(`${llmProvider} answer generation failed:`, error.message);
     // Fallback to extractive answer
     return generateExtractiveAnswer(question, relevantChunks);
   }
 }
 
 /**
- * Generate simple extractive answer (no LLM)
+ * Build the system prompt for LLMs
+ */
+function getSystemPrompt() {
+  return `You are a helpful assistant that answers questions based on the provided document context. 
+Answer the question using ONLY the information from the provided context. 
+If the context doesn't contain enough information to answer the question, say so.
+Be concise and accurate. Cite source numbers when referencing specific information.`;
+}
+
+/**
+ * Build the context from chunks
+ */
+function buildContext(relevantChunks) {
+  return relevantChunks
+    .map((chunk, index) => `[Source ${index + 1}]\n${chunk}`)
+    .join('\n\n');
+}
+
+/**
+ * Generate answer using OpenAI GPT
+ */
+async function generateOpenAIAnswer(question, relevantChunks) {
+  const client = getOpenAIClient();
+  const context = buildContext(relevantChunks);
+
+  const response = await client.chat.completions.create({
+    model: config.openaiChatModel,
+    messages: [
+      { role: 'system', content: getSystemPrompt() },
+      { role: 'user', content: `Context from documents:\n\n${context}\n\nQuestion: ${question}` },
+    ],
+    temperature: 0.3,
+    max_tokens: 1000,
+  });
+
+  return response.choices[0].message.content;
+}
+
+/**
+ * Generate answer using Groq (FREE - Llama, Mixtral models)
+ * Sign up at: https://console.groq.com
+ */
+async function generateGroqAnswer(question, relevantChunks) {
+  const client = getGroqClient();
+  const context = buildContext(relevantChunks);
+
+  const response = await client.chat.completions.create({
+    model: config.groqChatModel,
+    messages: [
+      { role: 'system', content: getSystemPrompt() },
+      { role: 'user', content: `Context from documents:\n\n${context}\n\nQuestion: ${question}` },
+    ],
+    temperature: 0.3,
+    max_tokens: 1000,
+  });
+
+  return response.choices[0].message.content;
+}
+
+/**
+ * Generate answer using Google Gemini (FREE tier available)
+ * Sign up at: https://makersuite.google.com/app/apikey
+ */
+async function generateGeminiAnswer(question, relevantChunks) {
+  const context = buildContext(relevantChunks);
+  
+  const prompt = `${getSystemPrompt()}
+
+Context from documents:
+
+${context}
+
+Question: ${question}`;
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${config.geminiChatModel}:generateContent?key=${config.geminiApiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 1000,
+        },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Gemini API error');
+  }
+
+  const data = await response.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Unable to generate answer';
+}
+
+/**
+ * Generate simple extractive answer (no LLM - completely FREE)
  * @param {string} question - User's question
  * @param {string[]} relevantChunks - Relevant document chunks
  * @returns {string} - Most relevant excerpt

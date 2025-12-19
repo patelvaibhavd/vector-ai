@@ -249,18 +249,43 @@ vector-ai/
 
 # Configuration Options
 
+## Embedding Provider Options
+
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `EMBEDDING_PROVIDER` | openai | `openai` or `local` |
-| `OPENAI_API_KEY` | - | OpenAI API key |
+| `EMBEDDING_PROVIDER` | local | `local` (FREE) or `openai` (paid) |
+
+## LLM Provider Options (Answer Generation)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `LLM_PROVIDER` | local | `local`, `groq`, `gemini`, or `openai` |
+| `GROQ_API_KEY` | - | Groq API key (FREE at console.groq.com) |
+| `GROQ_CHAT_MODEL` | llama-3.1-8b-instant | Groq model |
+| `GEMINI_API_KEY` | - | Google API key (FREE at makersuite.google.com) |
+| `GEMINI_CHAT_MODEL` | gemini-1.5-flash | Gemini model |
+| `OPENAI_API_KEY` | - | OpenAI API key (paid) |
 | `OPENAI_EMBEDDING_MODEL` | text-embedding-3-small | Embedding model |
 | `OPENAI_CHAT_MODEL` | gpt-4o-mini | Chat model |
+
+## Server Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
 | `PORT` | 3000 | Server port |
 | `CHUNK_SIZE` | 300 | Characters per chunk |
 | `CHUNK_OVERLAP` | 30 | Overlap between chunks |
 | `TOP_K_RESULTS` | 1 | Results to retrieve |
 | `SIMILARITY_THRESHOLD` | 0.3 | Minimum similarity |
 | `MAX_FILE_SIZE` | 10MB | Max upload size |
+
+## FREE Development Setup
+
+```env
+EMBEDDING_PROVIDER=local
+LLM_PROVIDER=groq
+GROQ_API_KEY=your-free-key
+```
 
 ---
 

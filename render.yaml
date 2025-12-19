@@ -1,0 +1,91 @@
+# Render Blueprint Specification
+# Deploy both backend and frontend on Render Free Plan
+# Documentation: https://render.com/docs/blueprint-spec
+
+services:
+  # ===========================================
+  # Backend API Service (Node.js Express)
+  # ===========================================
+  - type: web
+    name: vector-ai-backend
+    runtime: node
+    region: oregon # Free tier available in Oregon
+    plan: free
+    branch: main
+    rootDir: . # Backend is in the root directory
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      # ========================================
+      # DEFAULT: 100% FREE (No API keys needed)
+      # ========================================
+      # Embedding Provider: 'local' - No API key needed
+      - key: EMBEDDING_PROVIDER
+        value: local
+      # LLM Provider: 'local' - No API key needed
+      # Change to 'groq' or 'gemini' for AI-powered answers
+      - key: LLM_PROVIDER
+        value: local
+      # ========================================
+      # Vector Search Configuration
+      # ========================================
+      - key: CHUNK_SIZE
+        value: 300
+      - key: CHUNK_OVERLAP
+        value: 30
+      - key: TOP_K_RESULTS
+        value: 1
+      - key: SIMILARITY_THRESHOLD
+        value: 0.3
+      - key: MAX_FILE_SIZE
+        value: 5242880
+      # ========================================
+      # OPTIONAL: Enable AI-Powered Answers
+      # Set these in Render Dashboard > Environment
+      # ========================================
+      # For Groq (FREE): Get key at https://console.groq.com
+      # Then set LLM_PROVIDER=groq in dashboard
+      # - key: GROQ_API_KEY
+      #   sync: false
+      # - key: GROQ_CHAT_MODEL
+      #   value: llama-3.1-8b-instant
+      # For Gemini (FREE): Get key at https://makersuite.google.com/app/apikey
+      # Then set LLM_PROVIDER=gemini in dashboard
+      # - key: GEMINI_API_KEY
+      #   sync: false
+      # For OpenAI (Paid): https://platform.openai.com
+      # - key: OPENAI_API_KEY
+      #   sync: false
+
+  # ===========================================
+  # Frontend Static Site (Angular)
+  # ===========================================
+  - type: web
+    name: vector-ai-frontend
+    runtime: static
+    region: oregon
+    plan: free
+    branch: main
+    rootDir: frontend
+    buildCommand: npm install && npm run build:prod
+    staticPublishPath: dist/vector-ai-frontend/browser
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=31536000
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+

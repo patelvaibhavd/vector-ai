@@ -22,12 +22,21 @@ const storage = multer.diskStorage({
   },
 });
 
-// File filter - only allow PDFs
+// File filter - allow PDFs and TXT files
+const allowedMimeTypes = [
+  'application/pdf',
+  'text/plain',
+];
+
+const allowedExtensions = ['.pdf', '.txt'];
+
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype === 'application/pdf') {
+  const ext = path.extname(file.originalname).toLowerCase();
+  
+  if (allowedMimeTypes.includes(file.mimetype) || allowedExtensions.includes(ext)) {
     cb(null, true);
   } else {
-    cb(new AppError('Only PDF files are allowed', 400), false);
+    cb(new AppError('Only PDF and TXT files are allowed', 400), false);
   }
 };
 

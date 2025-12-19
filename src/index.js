@@ -23,6 +23,33 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Config info endpoint (for frontend to display provider info)
+app.get('/api/config', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      embeddingProvider: config.embeddingProvider,
+      llmProvider: config.llmProvider || config.embeddingProvider,
+      models: {
+        embedding: config.embeddingProvider === 'openai' 
+          ? config.openaiEmbeddingModel 
+          : 'all-MiniLM-L6-v2 (local)',
+        llm: getLLMModelName()
+      }
+    }
+  });
+});
+
+function getLLMModelName() {
+  const provider = config.llmProvider || config.embeddingProvider;
+  switch (provider) {
+    case 'openai': return config.openaiChatModel;
+    case 'groq': return config.groqChatModel;
+    case 'gemini': return config.geminiChatModel;
+    default: return 'Extractive (local)';
+  }
+}
+
 // API Routes
 app.use('/api/documents', documentRoutes);
 app.use('/api/search', searchRoutes);

@@ -78,6 +78,36 @@ router.get('/:id', (req, res, next) => {
 });
 
 /**
+ * GET /api/documents/:id/download
+ * Download the original uploaded file
+ */
+router.get('/:id/download', (req, res, next) => {
+  try {
+    const document = vectorStore.getDocument(req.params.id);
+    
+    if (!document) {
+      throw new AppError('Document not found', 404);
+    }
+    
+    const filePath = `uploads/${document.metadata.filename}`;
+    
+    if (!fs.existsSync(filePath)) {
+      throw new AppError('File not found on server', 404);
+    }
+    
+    // Set download headers
+    res.setHeader('Content-Disposition', `attachment; filename="${document.metadata.originalName}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * DELETE /api/documents/:id
  * Delete a document from the vector store and remove the uploaded file
  */

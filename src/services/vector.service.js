@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { config } from '../config/config.js';
 import { generateEmbedding, generateEmbeddings, generateAnswer } from './embedding.service.js';
-import { processPdf } from './pdf.service.js';
+import { processDocument } from './pdf.service.js';
 
 /**
  * In-memory vector store
@@ -149,17 +149,17 @@ function truncateAtWordBoundary(text, maxLength = 200) {
 }
 
 /**
- * Process and index a PDF document
- * @param {string} filePath - Path to the PDF file
+ * Process and index a document (PDF or TXT)
+ * @param {string} filePath - Path to the document file
  * @param {string} originalName - Original filename
  * @returns {Promise<object>} - Document metadata
  */
 export async function indexDocument(filePath, originalName) {
   // Extract text and create chunks
-  const { chunks, metadata } = await processPdf(filePath);
+  const { chunks, metadata } = await processDocument(filePath);
   
   if (chunks.length === 0) {
-    throw new Error('No text content found in the PDF');
+    throw new Error('No text content found in the document');
   }
   
   // Generate embeddings for all chunks
