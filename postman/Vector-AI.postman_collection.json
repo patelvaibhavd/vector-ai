@@ -1,0 +1,196 @@
+{
+  "info": {
+    "_postman_id": "vector-ai-collection",
+    "name": "Vector AI - PDF Q&A API",
+    "description": "REST API for PDF vector search and question-answering",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "documentId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Check if the server is running"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Documents",
+      "item": [
+        {
+          "name": "Upload PDF Document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data && jsonData.data.documentId) {",
+                  "        pm.collectionVariables.set('documentId', jsonData.data.documentId);",
+                  "        console.log('Document ID saved:', jsonData.data.documentId);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "document",
+                  "type": "file",
+                  "src": "",
+                  "description": "Select a PDF file to upload"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/upload",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents", "upload"]
+            },
+            "description": "Upload a PDF document for indexing. The document will be processed and stored for vector search."
+          },
+          "response": []
+        },
+        {
+          "name": "List All Documents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents"]
+            },
+            "description": "Get a list of all indexed documents"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Document by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/{{documentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents", "{{documentId}}"]
+            },
+            "description": "Get details of a specific document by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Document",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/{{documentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents", "{{documentId}}"]
+            },
+            "description": "Delete a document from the vector store and remove the uploaded PDF file from the server"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Search & Query",
+      "item": [
+        {
+          "name": "Ask Question (All Documents)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"question\": \"What is the main topic of this document?\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/search/query",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "search", "query"]
+            },
+            "description": "Ask a question and get an AI-generated answer based on all indexed documents"
+          },
+          "response": []
+        },
+        {
+          "name": "Ask Question (Specific Document)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"question\": \"What are the key points mentioned?\",\n    \"documentId\": \"{{documentId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/search/query",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "search", "query"]
+            },
+            "description": "Ask a question about a specific document"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Search Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/search/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "search", "stats"]
+            },
+            "description": "Get statistics about the vector store including total documents and chunks"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
+
