@@ -4,6 +4,10 @@
 # Docs: https://render.com/docs/blueprint-spec
 # ===========================================
 
+# ===========================================
+# Render Blueprint - Vector AI App (Free Tier)
+# ===========================================
+
 services:
   # ===========================================
   # Backend API (Node.js Express)
@@ -25,13 +29,13 @@ services:
       - key: PORT
         value: 3000
 
-      # LLM (Groq)
+      # LLM Configuration (Groq)
       - key: LLM_PROVIDER
         value: groq
       - key: GROQ_CHAT_MODEL
         value: llama-3.1-8b-instant
 
-      # Vector config
+      # Vector Configuration
       - key: EMBEDDING_PROVIDER
         value: local
       - key: CHUNK_SIZE
@@ -45,11 +49,14 @@ services:
       - key: MAX_FILE_SIZE
         value: 5242880
 
+      # ❗ Add GROQ_API_KEY from Render Dashboard only
+
   # ===========================================
   # Frontend (Angular Static Site)
   # ===========================================
-  - type: static
+  - type: web
     name: vector-ai-frontend
+    runtime: static
     branch: main
     rootDir: frontend
     buildCommand: npm install && npm run build:prod
