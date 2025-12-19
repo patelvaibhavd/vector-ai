@@ -6,12 +6,12 @@
 
 services:
   # ===========================================
-  # Backend API Service (Node.js Express)
+  # Backend API (Node.js Express)
   # ===========================================
   - type: web
     name: vector-ai-backend
     runtime: node
-    region: oregon                # ✅ Allowed for backend
+    region: oregon
     plan: free
     branch: main
     rootDir: .
@@ -20,25 +20,18 @@ services:
     healthCheckPath: /health
 
     envVars:
-      # ---------------------------------------
-      # App Environment
-      # ---------------------------------------
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 3000
 
-      # ---------------------------------------
-      # LLM Configuration (Groq)
-      # ---------------------------------------
+      # LLM (Groq)
       - key: LLM_PROVIDER
         value: groq
       - key: GROQ_CHAT_MODEL
         value: llama-3.1-8b-instant
 
-      # ---------------------------------------
-      # Vector Search Configuration
-      # ---------------------------------------
+      # Vector config
       - key: EMBEDDING_PROVIDER
         value: local
       - key: CHUNK_SIZE
@@ -52,23 +45,11 @@ services:
       - key: MAX_FILE_SIZE
         value: 5242880
 
-      # ---------------------------------------
-      # ❗ IMPORTANT
-      # ---------------------------------------
-      # DO NOT add GROQ_API_KEY here
-      # Add it from Render Dashboard:
-      # Backend → Environment → Add Variable
-      #
-      # Key:   GROQ_API_KEY
-      # Value: your_real_key_here
-
   # ===========================================
-  # Frontend Static Site (Angular)
+  # Frontend (Angular Static Site)
   # ===========================================
-  - type: web
+  - type: static
     name: vector-ai-frontend
-    runtime: static
-    plan: free                     # ✅ Static free tier
     branch: main
     rootDir: frontend
     buildCommand: npm install && npm run build:prod
